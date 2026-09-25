@@ -1,0 +1,118 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "host-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "host-debug",
+      "displayName": "Host Debug",
+      "inherits": "host-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "UWB_BUILD_TESTS": "ON",
+        "UWB_BUILD_SIMULATOR": "ON",
+        "UWB_BUILD_CLI": "ON",
+        "UWB_BUILD_PICO_FIRMWARE": "OFF"
+      }
+    },
+    {
+      "name": "host-release",
+      "displayName": "Host Release",
+      "inherits": "host-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "UWB_BUILD_TESTS": "ON",
+        "UWB_BUILD_SIMULATOR": "ON",
+        "UWB_BUILD_CLI": "ON",
+        "UWB_BUILD_PICO_FIRMWARE": "OFF"
+      }
+    },
+    {
+      "name": "host-asan",
+      "displayName": "Host Debug + ASan/UBSan",
+      "inherits": "host-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "UWB_ENABLE_SANITIZERS": "ON",
+        "UWB_BUILD_TESTS": "ON",
+        "UWB_BUILD_SIMULATOR": "ON",
+        "UWB_BUILD_CLI": "ON",
+        "UWB_BUILD_PICO_FIRMWARE": "OFF"
+      },
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1:abort_on_error=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      }
+    },
+    {
+      "name": "pico-w",
+      "displayName": "Pico W firmware (requires Pico SDK toolchain)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "$env{PICO_SDK_PATH}/pico_sdk_init.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "PICO_BOARD": "pico_w",
+        "UWB_BUILD_PICO_FIRMWARE": "ON",
+        "UWB_BUILD_SIMULATOR": "OFF",
+        "UWB_BUILD_CLI": "OFF",
+        "UWB_BUILD_TESTS": "OFF",
+        "UWB_ENABLE_SANITIZERS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "host-debug",
+      "configurePreset": "host-debug"
+    },
+    {
+      "name": "host-release",
+      "configurePreset": "host-release"
+    },
+    {
+      "name": "host-asan",
+      "configurePreset": "host-asan"
+    },
+    {
+      "name": "pico-w",
+      "configurePreset": "pico-w"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "host-debug",
+      "configurePreset": "host-debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      }
+    },
+    {
+      "name": "host-asan",
+      "configurePreset": "host-asan",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": true
+      }
+    }
+  ]
+}

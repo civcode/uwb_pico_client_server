@@ -1,0 +1,32 @@
+Checks: >
+  bugprone-*,
+  cert-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -misc-include-cleaner,
+  -modernize-macro-to-enum
+
+WarningsAsErrors: >
+  bugprone-*,
+  cert-*,
+  concurrency-*,
+  performance-*,
+  portability-*
+
+HeaderFilterRegex: 'shared/.*|server-core/.*|client-core/.*|simulator/.*|pico/.*'
+
+ExcludeHeaderFilterRegex: 'external/.*'
+
+CheckOptions:
+  - key: cppcoreguidelines-special-member-functions.allow-simplify-moveable-special-members-with-equity
+    value: true
+  - key: readability-function-cognitive-complexity.IgnoreMacros
+    value: true
