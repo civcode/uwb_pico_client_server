@@ -272,3 +272,39 @@ failed `sendKey`, a session transition, or a disconnect invalidates it, so a
 client must request a fresh seed (`0x27 0x01`) before retrying (`0x35`, `0x36`,
 `0x37` follow §21.4).
 
+
+## 17. Phase 3 simulator and transport decisions (implemented)
+
+* **Pre-activation application messages use the transport NACK, not a service
+  NRC.** A `0x8001` Application Message that arrives before the Activation
+  handshake is answered with `0x8003 ApplicationMessageNack`, code `0x03
+  ConnectionNotActivated` (§20.3), and the connection transitions to Closing. No
+  `0x7F`/`0x24` negative service response is generated because no service PDU has
+  been accepted yet (§18.4).
+* **Extended Session is enforced where the specification requires it.** Service
+  `0x11` (§24) and service `0x2E` for DIDs that do not state otherwise (§27) need
+  Control role **and** Extended Session; in a Default Session the answer is
+  `0x22 ConditionsNotCorrect`. Client code must therefore switch sessions before
+  reset or configuration writes.
+* **Framing violation = NACK then close.** When the received bytes are decodable
+  enough to identify a header error (§15 severe class), the adapter emits
+  `0x0000 GenericHeaderNack` and then closes the connection. Clients must accept a
+  NACK immediately followed by EOF instead of assuming silence.
+* **`0x78 ResponsePending` is not an answer.** Clients keep reading until the
+  matching final response arrives, and `0x0100` event notifications may be
+  interleaved with the pending exchange (§21.3, §38). The harness
+  `TcpClient::waitForResponse()` skips interim `0x78` frames and returns the final
+  one, and this is the behaviour Phase 4 client-core must implement.
+* **Backend failure classes map to fixed NRCs**: full UWB command queue →
+  `0x21`, module "not supported" → `0x31`, malformed module answer → `0x72`,
+  command deadline (`p2*`) → `0x72` plus backend operation cancellation (§21.4,
+  §48).
+* **Logical addresses.** The simulator identifies itself with the server range
+  (`0x1001` default); test and client processes use the client range
+  (`0x0E00`–`0x0EFF`, harness defaults `0x0E01`/`0x0E02`).
+* **Single-threaded core, atomic observation.** `ServerCore` is only touched by the
+  simulator event-loop thread; tests read `SimulatorRuntime` atomic counters
+  instead of `core()` (docs/simulator.md §4).
+* **Deterministic mode.** Seeded measurement generation plus an optional stepped
+  `ManualClock` (10 ms per tick) makes timeout supervision and event ordering
+  independent of host scheduling (plan §22.3).

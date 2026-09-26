@@ -52,7 +52,25 @@ Exit artifacts: `uwb_server_core` library, `IUwbBackend` / `IConnectionWriter` /
 connection/session/service state-machine tests (94 server-core tests),
 `docs/protocol_decisions.md` §13–§16.
 
-## ☐ Phase 3 — Simulator core
+## ☑ Phase 3 — Host simulator and first vertical slice
+
+| Acceptance criterion (plan §23) | Status | Evidence |
+|---|---|---|
+| Simulator uses the shared protocol and server-core libraries rather than reimplementing server behavior | ☑ | `SimulatorRuntime` wires `ServerCore` + host `IClock`/`IConfigurationStorage`/`ISecurityProvider`/`IUwbBackend`; only `simulator/src/asio_server.cpp` touches sockets |
+| A host integration test discovers and connects to the simulator over real UDP/TCP loopback | ☑ | `simulator_integration_test.cpp` — "UDP discovery answers with the simulated device identity", "Activation grants Control …", `ctest -L integration` → 29 tests |
+| Identity/config reads succeed end-to-end | ☑ | "Core-owned DID read answers synchronously" (0xF000), "UWB-backed DID read answers 0x78 then the final response" (0xF010), "Unknown DID is refused with NRC 0x31" |
+| A write succeeds for Control and fails for Observer | ☑ | "Writing a UWB DID updates the simulated model" (Extended Session), "Observers cannot write DIDs or execute raw AT" |
+| Measurement events can arrive interleaved with a pending request/response exchange | ☑ | "Live measurement stream keeps flowing while another request is pending" |
+| At least two simulator connections can be active concurrently as Control + Observer | ☑ | "Observers may connect alongside the Control client", "Two clients can talk to the same simulator at the same time" |
+| Fault injection can force a UWB timeout and the expected service failure reaches the test client | ☑ | "A slow backend produces the service timeout NRC" (0x72), busy 0x21, parse error 0x72, unsupported 0x31 |
+| Simulator tests run in normal CI without hardware | ☑ | `.github/workflows/ci.yml` runs `-L integration` for `host-debug` and `host-asan`; `ci/run_local_ci.sh all` → 180 unit + 29 integration in both presets |
+
+Exit artifacts: `uwb_simulator` executable (`uwb_simulator_core` static library +
+`main.cpp` CLI), `docs/simulator.md` (options, deterministic mode, fault injection,
+threading contract), `[integration]` test harness
+(`tests/integration/test_transport.hpp`, 29 tests), `docs/protocol_decisions.md`
+§17.
+
 ## ☐ Phase 4 — Client core foundation
 ## ☐ Phase 5 — Pico bootstrapping
 ## ☐ Phase 6 — UWB adapter and local AT engine

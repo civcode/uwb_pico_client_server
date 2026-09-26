@@ -40,6 +40,11 @@ ctest --preset host-debug -L integration # simulator-driven integration tests
 ctest --preset host-debug -L hil         # real hardware, opt-in only
 ```
 
+## Simulator
+
+`docs/simulator.md` documents `uwb_simulator` options, deterministic mode, fault
+injection, and the threading contract that the integration tests rely on.
+
 ## Dependency policy
 
 * Standalone Asio (not Boost.Asio) — `design_decisions.md`.

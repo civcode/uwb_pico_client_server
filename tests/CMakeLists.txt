@@ -39,6 +39,29 @@ uwb_apply_sanitizers(uwb_unit_tests)
 include(Catch)
 catch_discover_tests(uwb_unit_tests PROPERTIES LABELS "unit")
 
+# Phase 3 integration tests: simulator runtime behind the real Asio adapters.
+add_executable(uwb_integration_tests
+    integration/simulator_integration_test.cpp
+)
+
+target_compile_features(uwb_integration_tests PRIVATE cxx_std_20)
+target_include_directories(uwb_integration_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/integration
+)
+target_link_libraries(uwb_integration_tests PRIVATE
+    Catch2::Catch2WithMain
+    uwb::protocol
+    uwb::domain
+    uwb::server_core
+    uwb::simulator_core
+    uwb_asio
+)
+
+uwb_apply_warnings(uwb_integration_tests)
+uwb_apply_sanitizers(uwb_integration_tests)
+
+catch_discover_tests(uwb_integration_tests PROPERTIES LABELS "integration")
+
 # Hardware-in-the-loop tests are opt-in and never part of the default test run.
 if(UWB_ENABLE_HIL_TESTS)
     add_executable(uwb_hil_tests

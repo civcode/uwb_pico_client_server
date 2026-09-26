@@ -20,7 +20,12 @@ run_host() {
     cmake --build --preset "${preset}"
     echo "==> tests ${preset}"
     ctest --preset "${preset}" -L unit --output-on-failure
-    if ctest --preset "${preset}" -L integration --show-only 2>/dev/null | grep -q "Test #"; then
+    # NOTE: no grep -q in the pipeline here: pipefail would turn the early exit
+    # of grep into a false condition and silently skip the integration tests.
+    local available
+    available="$(ctest --preset "${preset}" -L integration --show-only 2>/dev/null || true)"
+    if [[ "${available}" == *"Test #"* ]]; then
+        echo "==> integration tests ${preset}"
         ctest --preset "${preset}" -L integration --output-on-failure
     fi
 }
