@@ -9,6 +9,9 @@ cd "${ROOT}"
 
 MODE="${1:-all}"
 
+echo "==> golden vectors (specification-derived)"
+"${ROOT}/tests/golden/verify.sh"
+
 run_host() {
     local preset="$1"
     echo "==> configure ${preset}"

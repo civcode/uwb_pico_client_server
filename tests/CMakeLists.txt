@@ -1,8 +1,20 @@
 add_executable(uwb_unit_tests
     unit/smoke_test.cpp
+    unit/wire_codec_test.cpp
+    unit/generic_header_test.cpp
+    unit/frame_parser_test.cpp
+    unit/uuid_test.cpp
+    unit/payloads_test.cpp
+    unit/services_test.cpp
+    unit/events_test.cpp
+    unit/did_records_test.cpp
+    unit/container_test.cpp
 )
 
 target_compile_features(uwb_unit_tests PRIVATE cxx_std_20)
+target_include_directories(uwb_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/unit
+)
 target_link_libraries(uwb_unit_tests PRIVATE
     Catch2::Catch2WithMain
     uwb::protocol
@@ -10,6 +22,10 @@ target_link_libraries(uwb_unit_tests PRIVATE
     uwb::server_core
     uwb::client_core
 )
+
+# Golden vectors in unit/gen/golden_vectors.hpp are generated from the
+# specification tables, never from the implementation:
+#   python3 tests/golden/gen_golden_vectors.py > tests/unit/gen/golden_vectors.hpp
 
 uwb_apply_warnings(uwb_unit_tests)
 uwb_apply_sanitizers(uwb_unit_tests)

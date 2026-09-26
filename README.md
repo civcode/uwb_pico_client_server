@@ -1,8 +1,8 @@
 # uwb-system
 
 C++20 implementation of the UWB Pico W client/server system described in
-[`../specification.md`](../specification.md) and
-[`../implementation_plan.md`](../implementation_plan.md).
+[`../uwb_pico_client_server_specification.md`](../specification.md) and
+[`../uwb_pico_client_server_implementation_plan.md`](../implementation_plan.md).
 
 ## Layout
 
@@ -26,6 +26,20 @@ cmake --preset host-debug
 cmake --build --preset host-debug
 ctest --preset host-debug
 ```
+
+85 unit tests (`[unit]` label) cover the wire protocol golden vectors. The vectors
+are generated from the specification tables, never from the C++ implementation:
+
+```bash
+tests/golden/regenerate.sh   # regenerate tests/unit/gen/golden_vectors.hpp
+tests/golden/verify.sh       # CI check: committed vectors == regeneration
+```
+
+Everything above also runs in `ci/run_local_ci.sh all` (debug + ASan/UBSan).
+
+Protocol decisions and specification reconciliations are recorded in
+[docs/protocol_decisions.md](docs/protocol_decisions.md); phase progress in
+[docs/phases.md](docs/phases.md).
 
 Sanitizer build (parser/replayer hardening):
 
