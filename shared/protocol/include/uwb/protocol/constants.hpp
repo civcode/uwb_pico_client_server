@@ -48,6 +48,12 @@ inline constexpr std::uint32_t kDefaultAliveCheckIntervalMs = 10000;
 inline constexpr std::uint32_t kMinAliveCheckIntervalMs = 1000;
 inline constexpr std::uint32_t kMaxAliveCheckIntervalMs = 600000;
 
+// Connection slot limits (specification §9.1).
+inline constexpr std::uint32_t kDefaultMaxControlConnections = 1;
+inline constexpr std::uint32_t kDefaultMaxObserverConnections = 3;
+inline constexpr std::uint32_t kDefaultMaxTcpConnections = 4;
+inline constexpr std::uint32_t kMaxObserverConnections = 3;
+
 // Bounded queue capacities (specification §53).
 inline constexpr std::uint32_t kUwbCommandQueueCapacity = 8;
 inline constexpr std::uint32_t kConnectionHighPriorityTxCapacity = 8;

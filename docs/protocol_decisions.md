@@ -214,13 +214,61 @@ manuals (V1.0.7 and the ground-truth kit docs) and must be settled on hardware.
 The measurement source is therefore an interface in the server core, so the answer
 does not change the wire codecs.
 
-## 13. Follow-ups for Phase 2
+## 13. Phase 2 server-core decisions (implemented)
 
 * Server-core DID framework: `didRecordSize()` + typed decode + access/persistence
-  policy, mapped to NRCs.
-* Session lifecycle: activation → optional security → session control → client
-  present / alive check timeout policy (§21–§23, §29, §37, §38 queue priority).
-* Stream manager: Live drop-oldest vs Recording fail-visibly (§37) and Stream
-  Status events (§36).
-* Connection-level `IClock`, `ILogger`, `ITransport` injection (no protocol logic in
-  transports).
+  policy, mapped to NRCs through one table (`server_errors.hpp`).
+* Session lifecycle: activation → optional security → session control → ClientPresent
+  refresh / alive-check and idle-timeout policy (§21–§23, §29, §37); every deadline is
+  evaluated from `IClock::monotonicUs()`, never from wall-clock time.
+* Stream manager: Live drop-oldest with visible counters vs Recording fail-visibly
+  (§37), plus high-priority Stream Status events (§36).
+* Connection-level `IClock`, `ILogger`, `IConnectionWriter`, `IUwbBackend`,
+  `IConfigurationStorage`, and `ISecurityProvider` injection: no transport, socket,
+  UART, or filesystem code inside `uwb_server_core`.
+* Asynchronous service completion (§21.4 `0x78`) is dispatcher-owned: the dispatcher
+  registers a pending request, submits to `IUwbBackend`, supervises the `p2*`
+  deadline in `tick()`, and cancels the backend operation on timeout.
+* Routine lifecycle: `Idle -> Running -> Stopping -> Completed/Failed/Cancelled`;
+  `IUwbBackend` operations are owned by a connection id so §9.4 cleanup
+  (`cancelOperations(owner)`, `stopAllForConnection`) is possible without a global
+  "current owner".
+* DID record validation NRCs follow §27: `0x13` for structural errors, `0x31` for
+  out-of-range values (§27 wording; see §15 below).
+
+## 14. Server-core TX priority classes (Phase 2)
+
+Specification §38 defines three logical transmission classes and §53 only two
+physical per-connection queues. Mapping used by `ConnectionTxQueue`:
+
+| §38 class | `TxPriority` | physical queue (§53) | contents |
+|---|---|---|---|
+| High | `High` | high-priority TX (8 frames) | service responses (including async `0x78` final responses and AT/routine results), ACK/NACK, GenericHeaderNack, activation/alive/session/security messages, connection management, **Stream Status** events |
+| Normal | `Normal` | normal-priority TX (8 frames) | non-critical status events (`UwbStatus`, `DiagnosticLog`) |
+| Streaming | `Low` | normal-priority TX, drained last | range/angle/localization/sensor samples (`UwbMeasurement`, `UwbLocalPosition`, `SensorData`) |
+
+Consequences that are normative and were verified by unit tests:
+
+* SRV-005 / §38: a service response is never queued behind a backlog of
+  streaming samples (`a service response overtakes a queued measurement backlog`).
+* Stream Status SHALL NOT share the drop policy of live measurements (§38); it is
+  pushed High.
+* Low-priority frames live in the normal queue and are drained after Normal-class
+  frames so a third physical queue is not needed on RP2040.
+
+## 15. Decode-error NRC rule for services (Phase 2)
+
+§27 states the general rule: structurally invalid data is `0x13`, a syntactically
+valid value outside the allowed range is `0x31`. `ServiceDispatcher` applies it to
+every service PDU decode failure (DID read/write, Session Control, Routine
+Control, Event Control, Raw AT), so an unknown DID, an unknown routine id, an
+unknown session id, or an over-long AT command is answered `0x31` rather than
+`0x13`.
+
+## 16. Security seed lifetime (Phase 2)
+
+`SecurityAccess` follows §25 with a v1 4-byte seed/key. A seed is single-use: a
+failed `sendKey`, a session transition, or a disconnect invalidates it, so a
+client must request a fresh seed (`0x27 0x01`) before retrying (`0x35`, `0x36`,
+`0x37` follow §21.4).
+

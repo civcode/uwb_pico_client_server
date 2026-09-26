@@ -35,7 +35,23 @@ Exit artifacts: `uwb_protocol` library, golden-vector suite (85 unit tests, rege
 `tests/golden/regenerate.sh` and verified by `tests/golden/verify.sh`), public protocol headers,
 `docs/protocol_decisions.md`.
 
-## ☐ Phase 2 — Server core foundation
+## ☑ Phase 2 — Server core foundation
+
+| Acceptance criterion (plan §18) | Status | Evidence |
+|---|---|---|
+| Server core builds and tests on a host without Pico SDK or lwIP | ☑ | `uwb_server_core` (host-debug/host-asan); `ctest --preset host-debug` → 180 unit tests |
+| All mutable actions are denied for Observer connections | ☑ | `server_core_test.cpp` — observer write DID denied, observer routine denied, observer reset denied, raw AT requires Control + Extended Session |
+| Session timeout behavior is deterministic using `IClock` | ☑ | `FakeClock` tests — idle Extended Session falls back to Default, TCP idle close, ClientPresent extends the deadline |
+| Service handlers can complete asynchronously without blocking the server core | ☑ | `0x78` → final response paths for DID read/write, AT, routines; p2* deadline answers `0x72` and cancels the backend operation |
+| All queues have fixed/configured maximum capacities | ☑ | `tx_queue_test.cpp`, `ServerConfig` queue/stream limits, live=4 / recording=32 stream queues (§53) |
+| Live and recording overflow semantics pass tests | ☑ | `event_service_test.cpp` — live drop-oldest with counters, recording overflow → `Failed` + Stream Status event |
+| No server-core component requires a real socket or UART | ☑ | fakes only in tests; `libuwb_server_core.a` also compiles for RP2040 (`ci/run_local_ci.sh firmware`) |
+
+Exit artifacts: `uwb_server_core` library, `IUwbBackend` / `IConnectionWriter` /
+`IConfigurationStorage` / `IClock` / `ISecurityProvider` interface contracts,
+connection/session/service state-machine tests (94 server-core tests),
+`docs/protocol_decisions.md` §13–§16.
+
 ## ☐ Phase 3 — Simulator core
 ## ☐ Phase 4 — Client core foundation
 ## ☐ Phase 5 — Pico bootstrapping

@@ -9,6 +9,12 @@ add_executable(uwb_unit_tests
     unit/events_test.cpp
     unit/did_records_test.cpp
     unit/container_test.cpp
+    unit/connection_policy_test.cpp
+    unit/tx_queue_test.cpp
+    unit/event_service_test.cpp
+    unit/did_service_test.cpp
+    unit/routine_service_test.cpp
+    unit/server_core_test.cpp
 )
 
 target_compile_features(uwb_unit_tests PRIVATE cxx_std_20)
