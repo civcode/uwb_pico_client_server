@@ -27,8 +27,11 @@ cmake --build --preset host-debug
 ctest --preset host-debug
 ```
 
-85 unit tests (`[unit]` label) cover the wire protocol golden vectors. The vectors
-are generated from the specification tables, never from the C++ implementation:
+Test labels: `[unit]` (243 cases: protocol golden vectors, server core, client
+core), `[integration]` (50 cases: real UDP/TCP loopback against the host
+simulator), `[simulator]`, `[hil]` (manual, hardware required, never in CI).
+The protocol golden vectors are generated from the specification tables, never
+from the C++ implementation:
 
 ```bash
 tests/golden/regenerate.sh   # regenerate tests/unit/gen/golden_vectors.hpp
@@ -48,6 +51,22 @@ cmake --preset host-asan
 cmake --build --preset host-asan
 ctest --preset host-asan
 ```
+
+## Host simulator and `uwbctl` client
+
+```bash
+./build/host-debug/simulator/uwb_simulator --device-name anchor1 --board-id 1,2,3,4,5,6,7,8
+./build/host-debug/simulator/uwb_simulator --device-name anchor2 --board-id 2,2,3,4,5,6,7,8
+
+./build/host-debug/apps/cli/uwbctl discover
+./build/host-debug/apps/cli/uwbctl connect anchor1 anchor2 --diagnostics
+./build/host-debug/apps/cli/uwbctl config get anchor1
+./build/host-debug/apps/cli/uwbctl stream range anchor1 --duration 5000
+```
+
+`docs/simulator.md` documents the simulator options and fault injection,
+`docs/cli.md` documents every `uwbctl` command, the threading model, and the
+manual acceptance run `tools/cli_smoke.sh`.
 
 ## Pico firmware build
 

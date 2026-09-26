@@ -49,6 +49,7 @@ if(UWB_BUILD_SIMULATOR)
 endif()
 
 add_subdirectory(client-core)
+add_subdirectory(client-core/net)
 
 if(UWB_BUILD_CLI)
     add_subdirectory(apps/cli)

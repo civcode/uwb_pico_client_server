@@ -15,6 +15,10 @@ add_executable(uwb_unit_tests
     unit/did_service_test.cpp
     unit/routine_service_test.cpp
     unit/server_core_test.cpp
+    unit/client_transaction_test.cpp
+    unit/client_connection_test.cpp
+    unit/client_registry_test.cpp
+    unit/client_manager_test.cpp
 )
 
 target_compile_features(uwb_unit_tests PRIVATE cxx_std_20)
@@ -42,6 +46,8 @@ catch_discover_tests(uwb_unit_tests PROPERTIES LABELS "unit")
 # Phase 3 integration tests: simulator runtime behind the real Asio adapters.
 add_executable(uwb_integration_tests
     integration/simulator_integration_test.cpp
+    integration/client_simulator_test.cpp
+    integration/client_session_test.cpp
 )
 
 target_compile_features(uwb_integration_tests PRIVATE cxx_std_20)
@@ -54,6 +60,8 @@ target_link_libraries(uwb_integration_tests PRIVATE
     uwb::domain
     uwb::server_core
     uwb::simulator_core
+    uwb::client_core
+    uwb::client_net
     uwb_asio
 )
 

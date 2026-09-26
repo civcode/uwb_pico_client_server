@@ -71,7 +71,43 @@ threading contract), `[integration]` test harness
 (`tests/integration/test_transport.hpp`, 29 tests), `docs/protocol_decisions.md`
 §17.
 
-## ☐ Phase 4 — Client core foundation
+## ☑ Phase 4 — Client core foundation (Milestone B)
+
+| Acceptance criterion (plan §29) | Status | Evidence |
+|---|---|---|
+| One `io_context`/async engine manages all simulator connections | ☑ | `ClientRuntime` / `AsioExecutor` own one `asio::io_context` and one `TickTimer`; `ConnectionManager` supervises every connection from that single executor (`client_manager_test.cpp`: "manager tick supervises every connection on the single I/O thread") |
+| No thread-per-device architecture in the reference client | ☑ | `grep -c 'std::thread' client-core/src/*.cpp` = 0; the only thread is the single I/O thread started by `ClientSession` (`client-core/net/src/client_session.cpp`) |
+| CLI discovers at least three simulator instances | ☑ | `tools/cli_smoke.sh`: `discover` lists `sim1`, `sim2`, `sim3`, `guarded` (4 simulators, ports 13401-13404) |
+| CLI connects to all of them concurrently | ☑ | smoke run `connect sim1 sim2 sim3 --diagnostics` → `connections 3 (active 3)`, each `role control` |
+| Each connection can hold a pending request while measurement events arrive | ☑ | `client_simulator_test.cpp`: "live streams from several devices arrive on the notification queue" (streams run while DID reads are in flight); unit: "ResponsePending keeps the transaction outstanding instead of answering", "ack-required requests stay open until the application ack arrives" |
+| Responses matched by transaction ID, not arrival order | ☑ | `client_connection_test.cpp`: "responses correlate by transaction id, never by arrival order", "a response for an unknown transaction id is counted, not delivered"; `client_transaction_test.cpp` (9 tests, incl. wrap + capacity) |
+| Device registry keyed by UUID | ☑ | `client_registry_test.cpp`: "the discovery registry is keyed by device uuid", "a device with a live connection keeps the endpoint it connected to"; integration: "the client discovers every simulator and keys the registry by UUID" |
+| CLI code has no direct socket calls | ☑ | `apps/cli/src/main.cpp` includes only `uwb/client/*`, `uwb/client_net/*`, `uwb/protocol/*` and `uwb/domain/*`; the single Asio mention in the file is a comment; all socket code lives in `client-core/net/src/asio_transport.cpp` |
+| Slow CLI/output processing does not stall network processing | ☑ | `client_registry_test.cpp`: "a slow consumer drops notifications instead of blocking the producer"; integration: "a slow notification consumer drops notifications, not the connection"; smoke `monitor --capacity 4` → 11 notification drops, 0 timeouts, 0 protocol errors, 3 active connections |
+| Simulator/client integration suite passes under sanitizers | ☑ | `ci/run_local_ci.sh all` → 243 unit + 50 integration tests green in `host-debug` **and** `host-asan`, no sanitizer reports |
+
+Plan §28 required tests, all present:
+
+| Required test | Test |
+|---|---|
+| Multiple simulators discovered concurrently | "the client discovers every simulator and keys the registry by UUID" (3 simulators in one process) |
+| Same logical address, distinct UUIDs stay distinct | "the discovery registry is keyed by device uuid" (two devices share `0x1001`) |
+| Same UUID at a changed endpoint updates instead of duplicating | "a device with a live connection keeps the endpoint it connected to", "stale devices are pruned, connected devices are never pruned" |
+| Several simultaneous TCP connections | "live streams from several devices arrive on the notification queue", smoke `connect sim1 sim2 sim3` |
+| Interleaved requests/events | "live measurement stream keeps flowing while another request is pending" (Phase 3), "event notifications are delivered with the owning device" |
+| Request timeout | "outstanding requests expire and report a timeout", "an unanswered request times out and frees the pending slot" |
+| Late response | "late responses are counted instead of delivered", "cancel completes the request and a late answer is only counted" |
+| Disconnect during a pending request | "a dropped device reconnects and its stream is restored", "an unexpected peer close schedules a reconnect with backoff" |
+| Transaction-ID wrap with a reduced range | "transaction id allocation wraps inside the configured range" (injectable 3-id range) |
+| Slow consumer does not block network reads | "a slow notification consumer drops notifications, not the connection" |
+
+Exit artifacts: `uwb_client_core` (Asio-free, `-Wconversion` clean),
+`uwb_client_net` (`AsioTcpTransport`, `AsioUdpDiscoveryTransport`,
+`ClientRuntime`, `ClientSession` marshalling façade), `uwbctl` executable
+(`apps/cli/src/main.cpp`), `docs/cli.md`, `tools/cli_smoke.sh`, and the
+multi-device integration suites `client_simulator_test.cpp` (15) +
+`client_session_test.cpp` (6).
+
 ## ☐ Phase 5 — Pico bootstrapping
 ## ☐ Phase 6 — UWB adapter and local AT engine
 ## ☐ Phase 7 — Persistent config, LittleFS, reboot semantics
